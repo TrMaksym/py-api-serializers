@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 from cinema.models import Genre, Actor, CinemaHall, Movie, MovieSession
 
@@ -20,9 +21,14 @@ class ActorSerializer(serializers.ModelSerializer):
 
 
 class CinemaHallSerializer(serializers.ModelSerializer):
+    capacity = serializers.SerializerMethodField()
+
     class Meta:
         model = CinemaHall
         fields = ("id", "name", "rows", "seats_in_row", "capacity")
+
+    def get_capacity(self, obj):
+        return obj.rows * obj.seats_in_row
 
 
 class MovieSerializer(serializers.ModelSerializer):
@@ -70,10 +76,8 @@ class MovieListSerializer(serializers.ModelSerializer):
 
 
 class MovieSessionSerializer(serializers.ModelSerializer):
-    movie_title = serializers.CharField(source="movie.title",
-                                        read_only=True)
-    cinema_hall_name = serializers.CharField(source="cinema_hall.name",
-                                             read_only=True)
+    movie_title = serializers.CharField(source="movie.title", read_only=True)
+    cinema_hall_name = serializers.CharField(source="cinema_hall.name", read_only=True)
     cinema_hall_capacity = serializers.SerializerMethodField()
     cinema_hall = serializers.PrimaryKeyRelatedField(
         queryset=CinemaHall.objects.all(), write_only=True, required=True
@@ -81,6 +85,11 @@ class MovieSessionSerializer(serializers.ModelSerializer):
     movie = serializers.PrimaryKeyRelatedField(
         queryset=Movie.objects.all(), write_only=True, required=True
     )
+
+    def validate_show_time(self, value):
+        if value and not timezone.is_aware(value):
+            value = timezone.make_aware(value)
+        return value
 
     class Meta:
         model = MovieSession
@@ -90,7 +99,7 @@ class MovieSessionSerializer(serializers.ModelSerializer):
         )
 
     def get_cinema_hall_capacity(self, obj):
-        return obj.cinema_hall.capacity
+        return obj.cinema_hall.rows * obj.cinema_hall.seats_in_row
 
 
 class MovieSessionDetailSerializer(serializers.ModelSerializer):
