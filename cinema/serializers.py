@@ -65,12 +65,15 @@ class MovieListSerializer(serializers.ModelSerializer):
         fields = ("id", "title", "description", "duration", "genres", "actors")
 
     def get_actors(self, obj):
-        return [f"{actor.first_name} {actor.last_name}" for actor in obj.actors.all()]
+        return [f"{actor.first_name} {actor.last_name}"
+                for actor in obj.actors.all()]
 
 
 class MovieSessionSerializer(serializers.ModelSerializer):
-    movie_title = serializers.CharField(source="movie.title", read_only=True)
-    cinema_hall_name = serializers.CharField(source="cinema_hall.name", read_only=True)
+    movie_title = serializers.CharField(source="movie.title",
+                                        read_only=True)
+    cinema_hall_name = serializers.CharField(source="cinema_hall.name",
+                                             read_only=True)
     cinema_hall_capacity = serializers.SerializerMethodField()
     cinema_hall = serializers.PrimaryKeyRelatedField(
         queryset=CinemaHall.objects.all(), write_only=True, required=True
